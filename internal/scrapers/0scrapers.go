@@ -1,13 +1,14 @@
 package scrapers
 
-import "github.com/gocolly/colly"
+import (
+	"github.com/gocolly/colly"
+	"go-scrapers/internal/scrapers/amazon"
+)
 
-var scraper *colly.Collector
+func Init(query string) {
+	scraper := colly.NewCollector(
+		colly.Async(true),
+	)
 
-func Init() {
-	scraper = colly.NewCollector(colly.Async(true))
-}
-
-func Get() *colly.Collector {
-	return scraper
+	amazon.Scrape(scraper.Clone(), query)
 }

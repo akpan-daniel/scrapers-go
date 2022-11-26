@@ -2,7 +2,9 @@ package utils
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
+	"github.com/gocolly/colly"
 	"log"
 	"net/url"
 	"os"
@@ -25,28 +27,8 @@ func GetQuery() string {
 	return url.QueryEscape(query)
 }
 
-func GetFile() *os.File {
-	var fileName string
-
-	fmt.Print("Please enter name of output file (default: result): ")
-	fileName, _ = bufio.NewReader(os.Stdin).ReadString('\n')
-	fileName = strings.TrimSpace(fileName)
-
-	if strings.EqualFold(fileName, "") {
-		fileName = "result"
-	}
-
-	fileName = strings.ReplaceAll(fileName, " ", "_")
-	names := strings.Split(fileName, ".")
-	if names[len(names)-1] != "csv" {
-		fileName = strings.Join(names, "-") + ".csv"
-	}
-
-	return openFile(fileName)
-}
-
-// GetFile get file or create if not exist
-func openFile(fileName string) *os.File {
+// OpenFile get file or create if not exist
+func OpenFile(fileName string) *os.File {
 	file, err := os.Create(fileName)
 	if err != nil {
 		log.Fatalln(err)
@@ -61,4 +43,41 @@ func CloseFile(file *os.File) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func LogFailedUrls(fileName string, failedMap map[string]string) {
+	file := OpenFile(fileName)
+	defer CloseFile(file)
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	_ = writer.Write([]string{"URL", "ERROR"})
+
+	for _url, err := range failedMap {
+		log.Println(err)
+		_ = writer.Write([]string{_url, err})
+	}
+}
+
+func MakeDirs(dirName *string) {
+	if !strings.HasSuffix(*dirName, "/") {
+		*dirName = *dirName + "/"
+	}
+
+	if err := os.MkdirAll(*dirName+".cache/", os.ModePerm); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func RegisterHandlers(scraper *colly.Collector) {
+	scraper.OnRequest(func(request *colly.Request) {
+		log.Printf("Visiting: %s\n", request.URL.String())
+	})
+	scraper.OnResponse(func(response *colly.Response) {
+		log.Printf(
+			"Leaving: %s\nStatus Code: %d\n",
+			response.Request.URL.String(), response.StatusCode,
+		)
+	})
 }
