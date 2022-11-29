@@ -51,7 +51,7 @@ func LogFailedUrls(dirName string, failedMap map[string]string) {
 		return
 	}
 
-	file := OpenFile(dirName + "failed-urls.txt")
+	file := OpenFile(dirName + "failed-urls.csv")
 	defer CloseFile(file)
 
 	writer := csv.NewWriter(file)

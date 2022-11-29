@@ -11,7 +11,7 @@ import (
 
 var (
 	ScraperDomain = "www.worldometers.info"
-	DirName       = "worldometer/"
+	DirName       = "worldometers/"
 	failedUrls    = make(map[string]string)
 )
 
