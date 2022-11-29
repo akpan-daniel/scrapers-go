@@ -1,8 +1,9 @@
 package scrapers
 
 import (
-	"github.com/gocolly/colly"
-	"go-scrapers/internal/scrapers/amazon"
+	"go-scrapers/internal/scrapers/worldometers"
+
+	"github.com/gocolly/colly/v2"
 )
 
 func Init(query string) {
@@ -10,5 +11,6 @@ func Init(query string) {
 		colly.Async(true),
 	)
 
-	amazon.Scrape(scraper.Clone(), query)
+	// amazon.Scrape(scraper.Clone(), query)
+	worldometers.Scrape(scraper.Clone())
 }

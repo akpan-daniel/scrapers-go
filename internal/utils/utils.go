@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"github.com/gocolly/colly"
 	"log"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/gocolly/colly/v2"
 )
 
 func GetQuery() string {
@@ -45,8 +46,12 @@ func CloseFile(file *os.File) {
 	}
 }
 
-func LogFailedUrls(fileName string, failedMap map[string]string) {
-	file := OpenFile(fileName)
+func LogFailedUrls(dirName string, failedMap map[string]string) {
+	if !(len(failedMap) > 0) {
+		return
+	}
+
+	file := OpenFile(dirName + "failed-urls.txt")
 	defer CloseFile(file)
 
 	writer := csv.NewWriter(file)
@@ -70,7 +75,11 @@ func MakeDirs(dirName *string) {
 	}
 }
 
-func RegisterHandlers(scraper *colly.Collector) {
+func RegisterHandlers(scraper *colly.Collector, dirName string, domain ...string) {
+	scraper.CacheDir = dirName + ".cache/"
+	scraper.AllowedDomains = append(
+		scraper.AllowedDomains, domain...,
+	)
 	scraper.OnRequest(func(request *colly.Request) {
 		log.Printf("Visiting: %s\n", request.URL.String())
 	})

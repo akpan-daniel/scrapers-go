@@ -3,9 +3,10 @@ package amazon
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/gocolly/colly"
 	"go-scrapers/internal/utils"
 	"log"
+
+	"github.com/gocolly/colly/v2"
 )
 
 var (
@@ -20,7 +21,7 @@ func Scrape(scraper *colly.Collector, query string) {
 	file := utils.OpenFile(DirName + "result.csv")
 	defer utils.CloseFile(file)
 
-	defer logFailedUrls()
+	defer utils.LogFailedUrls(DirName, failedUrls)
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
@@ -28,12 +29,7 @@ func Scrape(scraper *colly.Collector, query string) {
 	// Create Headers
 	_ = writer.Write(Product{}.GetHeaders())
 
-	utils.RegisterHandlers(scraper)
-	scraper.CacheDir = DirName + "/.cache/"
-	scraper.AllowedDomains = append(
-		scraper.AllowedDomains,
-		ScraperDomain,
-	)
+	utils.RegisterHandlers(scraper, DirName, ScraperDomain)
 
 	scraper.OnError(func(response *colly.Response, err error) {
 		url := response.Request.URL.String()
@@ -43,7 +39,7 @@ func Scrape(scraper *colly.Collector, query string) {
 	scraperURL := fmt.Sprintf("https://%s/s?k=%s", ScraperDomain, query)
 
 	detailScraper := scraper.Clone()
-	utils.RegisterHandlers(detailScraper)
+	utils.RegisterHandlers(detailScraper, DirName, ScraperDomain)
 
 	scraper.OnHTML("div[data-component-type='s-search-result']", func(element *colly.HTMLElement) {
 		productURL := element.ChildAttr("h2.a-size-mini > a", "href")
@@ -82,10 +78,4 @@ func Scrape(scraper *colly.Collector, query string) {
 
 	scraper.Wait()
 	detailScraper.Wait()
-}
-
-func logFailedUrls() {
-	if len(failedUrls) > 0 {
-		utils.LogFailedUrls(DirName+"failed-urls.txt", failedUrls)
-	}
 }
