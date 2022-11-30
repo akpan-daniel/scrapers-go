@@ -77,9 +77,9 @@ func MakeDirs(dirName *string) {
 
 func RegisterHandlers(scraper *colly.Collector, dirName string, domain ...string) {
 	scraper.CacheDir = dirName + ".cache/"
-	scraper.AllowedDomains = append(
-		scraper.AllowedDomains, domain...,
-	)
+	// scraper.AllowedDomains = append(
+	// 	scraper.AllowedDomains, domain...,
+	// )
 	scraper.OnRequest(func(request *colly.Request) {
 		log.Printf("Visiting: %s\n", request.URL.String())
 	})
