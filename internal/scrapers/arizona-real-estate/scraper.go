@@ -31,15 +31,29 @@ func Scrape(scraper *colly.Collector) {
 
 	utils.RegisterHandlers(scraper, DirName, ScraperDomain)
 
-	scraper.Limit(&colly.LimitRule{
+	detailScraper := scraper.Clone()
+	detailScraper.Async = true
+	detailScraper.Limit(&colly.LimitRule{
 		DomainGlob:  "*",
 		Parallelism: 4,
 		Delay:       5 * time.Second,
 	})
 
+	utils.RegisterHandlers(detailScraper, DirName, ScraperDomain)
+
 	count := 0
 
-	scraper.OnXML("//div[@class='si-listings-column']", func(element *colly.XMLElement) {
+	scraper.OnXML("//section[@class='section-city-list']//ul[contains(@class, 'list')]/li/a", func(element *colly.XMLElement) {
+		url := element.Attr("href")
+		nextURL := element.Request.AbsoluteURL(url)
+
+		if err := detailScraper.Visit(nextURL); err != nil {
+			failedUrls[url] = err.Error()
+			log.Println("Error visiting:", err)
+		}
+	})
+
+	detailScraper.OnXML("//div[@class='si-listings-column']", func(element *colly.XMLElement) {
 		property := Property{
 			Name:        element.ChildText(".//div[@class='si-listing__title-main']"),
 			Description: element.ChildText(".//div[@class='si-listing__title-description']"),
@@ -50,21 +64,21 @@ func Scrape(scraper *colly.Collector) {
 		count++
 	})
 
-	scraper.OnXML("//li[@class='next']", func(element *colly.XMLElement) {
+	detailScraper.OnXML("//li[@class='next']", func(element *colly.XMLElement) {
 		url := element.ChildAttr(".//a", "href")
 		nextUrl := element.Request.AbsoluteURL(url)
 
-		if err := scraper.Visit(nextUrl); err != nil {
+		if err := detailScraper.Visit(nextUrl); err != nil {
 			failedUrls[url] = err.Error()
 			log.Println("Error visiting:", err)
 		}
 	})
 
-	scraperURL := fmt.Sprintf("https://%s/maricopa/", ScraperDomain)
+	scraperURL := fmt.Sprintf("https://%s/", ScraperDomain)
 
-	if err := scraper.Visit(scraperURL); err != nil {
-		log.Fatalln("Unable to start scraper:", err.Error())
-	}
+	scraper.Visit(scraperURL)
 
 	scraper.Wait()
+	detailScraper.Wait()
+	log.Println(count)
 }

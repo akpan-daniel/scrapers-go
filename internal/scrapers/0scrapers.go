@@ -11,9 +11,7 @@ import (
 var scraper *colly.Collector
 
 func Init() {
-	scraper = colly.NewCollector(
-		colly.Async(true),
-	)
+	scraper = colly.NewCollector()
 }
 
 func InitAmazon(query string) {
